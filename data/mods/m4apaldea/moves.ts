@@ -144,4 +144,69 @@ export const Moves: {[moveid: string]: ModdedMoveData} = {
 			},
 		},
 	},
+
+
+	// Endless Dream field
+	wakeupslap: {
+		inherit: true,
+		basePowerCallback(pokemon, target, move) {
+			if (target.status === 'slp' || target.hasAbility('comatose') || this.field.getPseudoWeather('endlessdream')) return move.basePower * 2;
+			return move.basePower;
+		},
+	},
+	dreameater: {
+		inherit: true,
+		onTryImmunity(target, source) {
+			return target.status === 'slp' || target.hasAbility('comatose') || this.field.getPseudoWeather('endlessdream');
+		},
+	},
+	nightmare: {
+		inherit: true,
+		condition: {
+			noCopy: true,
+			onStart(pokemon) {
+				if (pokemon.status !== 'slp' && !pokemon.hasAbility('comatose') && !this.field.getPseudoWeather('endlessdream')) {
+					return false;
+				}
+				this.add('-start', pokemon, 'Nightmare');
+			},
+			onResidualOrder: 9,
+			onResidual(pokemon) {
+				this.damage(pokemon.baseMaxhp / 4);
+			},
+		},
+	},
+	sleeptalk: {
+		inherit: true,
+		onTry(source) {
+			let usable = false;
+			for (const opponent of source.adjacentFoes()) {
+				if (this.field.getPseudoWeather('endlessdream')) {
+					usable = true;
+					break;
+				}
+			}
+			return source.status === 'slp' || source.hasAbility('comatose') || usable;
+		},
+	},
+	// For Ogerpon-Mega
+	ivycudgel: {
+		inherit: true,
+		onModifyType(move, pokemon) {
+			switch (pokemon.species.name) {
+			case 'Ogerpon-Wellspring': case 'Ogerpon-Wellspring-Tera':
+				move.type = 'Water';
+				break;
+			case 'Ogerpon-Hearthflame': case 'Ogerpon-Hearthflame-Tera':
+				move.type = 'Fire';
+				break;
+			case 'Ogerpon-Cornerstone': case 'Ogerpon-Cornerstone-Tera':
+				move.type = 'Rock';
+				break;
+			case 'Ogerpon-Mega':
+				move.type = 'Fairy';
+				break;
+			}
+		},
+	},
 };

@@ -1,4 +1,4 @@
-export const Conditions: {[k: string]: ConditionData} = {
+export const Conditions: import('../../../sim/dex-moves').ModdedConditionDataTable = {
 	dynamax: {
 		name: 'Dynamax',
 		noCopy: true,
@@ -19,12 +19,12 @@ export const Conditions: {[k: string]: ConditionData} = {
 						this.add('-activate', pokemon, 'ability: Mold Breaker');
 						break;
 					case 'Blastoise':
-						pokemon.setAbility('bulletproof', pokemon, true);
-						this.add('-activate', pokemon, 'ability: Bulletproof');
+						pokemon.setAbility('stamina', pokemon, true);
+						this.add('-activate', pokemon, 'ability: Stamina');
 						break;
 					case 'Butterfree':
-						pokemon.setAbility('magicbounce', pokemon, true);
-						this.add('-activate', pokemon, 'ability: Magic Bounce');
+						pokemon.setAbility('soulheart', pokemon, true);
+						this.add('-activate', pokemon, 'ability: Soul-Heart');
 						break;
 					case 'Pikachu':
 						pokemon.setAbility('hugepower', pokemon, true);
@@ -39,8 +39,8 @@ export const Conditions: {[k: string]: ConditionData} = {
 						this.add('-activate', pokemon, 'ability: Scrappy');
 						break;
 					case 'Gengar':
-						pokemon.setAbility('mummy', pokemon, true);
-						this.add('-activate', pokemon, 'ability: Mummy');
+						pokemon.setAbility('corrosion', pokemon, true);
+						this.add('-activate', pokemon, 'ability: Corrosion');
 						break;
 					case 'Kingler':
 						pokemon.setAbility('angershell', pokemon, true);
@@ -55,8 +55,8 @@ export const Conditions: {[k: string]: ConditionData} = {
 						this.add('-activate', pokemon, 'ability: Friend Guard');
 						break;
 					case 'Snorlax':
-						pokemon.setAbility('sapsipper', pokemon, true);
-						this.add('-activate', pokemon, 'ability: Sap Sipper');
+						pokemon.setAbility('naturalcure', pokemon, true);
+						this.add('-activate', pokemon, 'ability: Natural Cure');
 						break;
 					case 'Garbodor':
 						pokemon.setAbility('toxicdebris', pokemon, true);
@@ -71,28 +71,28 @@ export const Conditions: {[k: string]: ConditionData} = {
 						this.add('-activate', pokemon, 'ability: Grass Pelt');
 						break;
 					case 'Cinderace':
-						pokemon.setAbility('quickfeet', pokemon, true);
-						this.add('-activate', pokemon, 'ability: Quick Feet');
-						break;
-					case 'Inteleon':
-						pokemon.setAbility('stormdrain', pokemon, true);
-						this.add('-activate', pokemon, 'ability: Storm Drain');
-						break;
-					case 'Corviknight':
-						pokemon.setAbility('ironbarbs', pokemon, true);
-						this.add('-activate', pokemon, 'ability: Iron Barbs');
-						break;
-					case 'Orbeetle':
 						pokemon.setAbility('magicguard', pokemon, true);
 						this.add('-activate', pokemon, 'ability: Magic Guard');
+						break;
+					case 'Inteleon':
+						pokemon.setAbility('stakeout', pokemon, true);
+						this.add('-activate', pokemon, 'ability: Stakeout');
+						break;
+					case 'Corviknight':
+						pokemon.setAbility('intimidate', pokemon, 'intimidate', true);
+						//this.add('-activate', pokemon, 'ability: Intimidate');
+						break;
+					case 'Orbeetle':
+						pokemon.setAbility('psychicsurge', pokemon, true);
+						this.add('-activate', pokemon, 'ability: Psychic Surge');
 						break;
 					case 'Drednaw':
 						pokemon.setAbility('solidrock', pokemon, true);
 						this.add('-activate', pokemon, 'ability: Solid Rock');
 						break;
 					case 'Coalossal':
-						pokemon.setAbility('eartheater', pokemon, true);
-						this.add('-activate', pokemon, 'ability: Earth Eater');
+						pokemon.setAbility('desolateland', pokemon, true);
+						this.add('-activate', pokemon, 'ability: Desolate Land');
 						break;
 					case 'Appletun':
 						pokemon.setAbility('grassysurge', pokemon, true);
@@ -107,6 +107,10 @@ export const Conditions: {[k: string]: ConditionData} = {
 						this.add('-activate', pokemon, 'ability: Sand Rush');
 						break;
 					case 'Toxtricity':
+						pokemon.setAbility('merciless', pokemon, true);
+						this.add('-activate', pokemon, 'ability: Merciless');
+						break;
+					case 'Toxtricity-Low-Key':
 						pokemon.setAbility('electromorphosis', pokemon, true);
 						this.add('-activate', pokemon, 'ability: Electromorphosis');
 						break;
@@ -115,8 +119,8 @@ export const Conditions: {[k: string]: ConditionData} = {
 						this.add('-activate', pokemon, 'ability: Dry Skin');
 						break;
 					case 'Hatterene':
-						pokemon.setAbility('naturalcure', pokemon, true);
-						this.add('-activate', pokemon, 'ability: Natural Cure');
+						pokemon.setAbility('regenerator', pokemon, true);
+						this.add('-activate', pokemon, 'ability: Regenerator');
 						break;
 					case 'Grimmsnarl':
 						pokemon.setAbility('mistysurge', pokemon, true);
@@ -127,16 +131,20 @@ export const Conditions: {[k: string]: ConditionData} = {
 						this.add('-activate', pokemon, 'ability: Well-Baked Body');
 						break;
 					case 'Copperajah':
-						pokemon.setAbility('stamina', pokemon, true);
-						this.add('-activate', pokemon, 'ability: Stamina');
+						pokemon.setAbility('bulletproof', pokemon, true);
+						this.add('-activate', pokemon, 'ability: Bulletproof');
 						break;
 					case 'Duraludon':
-						pokemon.setAbility('pressure', pokemon, true);
-						this.add('-activate', pokemon, 'ability: Pressure');
+						pokemon.setAbility('unaware', pokemon, true);
+						this.add('-activate', pokemon, 'ability: Unaware');
 						break;
 					case 'Urshifu':
-						pokemon.setAbility('innerfocus', pokemon, true);
-						this.add('-activate', pokemon, 'ability: Inner Focus');
+						pokemon.setAbility('ironfist', pokemon, true);
+						this.add('-activate', pokemon, 'ability: Iron Fist');
+						break;
+					case 'Urshifu-Rapid-Strike':
+						pokemon.setAbility('ironfist', pokemon, true);
+						this.add('-activate', pokemon, 'ability: Iron Fist');
 						break;
 				}
 			}
@@ -176,14 +184,19 @@ export const Conditions: {[k: string]: ConditionData} = {
 			}
 		},
 		onSourceModifyDamage(damage, source, target, move) {
-			if (['behemothbash','behemothblade','dynamaxcannon'].includes(move.id)) {
+			if (['behemothbash','behemothblade','dynamaxcannon','terablast'].includes(move.id)) {
 				return this.chainModify(2);
 			}
 		},
 		onDragOutPriority: 2,
 		onDragOut(pokemon) {
-			this.add('-block', pokemon, 'Dynamax');
-			return null;
+			if (!pokemon.gigantamax) {
+				this.add('-block', pokemon, 'Dynamax');
+				return null;
+			}
+			if (pokemon.gigantamax) {
+				pokemon.removeVolatile('dynamax');
+			}
 		},
 		onResidualPriority: -100,
 		onResidual(pokemon) {
@@ -215,12 +228,15 @@ export const Conditions: {[k: string]: ConditionData} = {
 			const source = this.effectState.source;
 			// G-Max Centiferno and G-Max Sandblast no longer continue even after the user leaves the field
 			const gmaxEffect = ['gmaxcentiferno', 'gmaxsandblast'].includes(this.effectState.sourceEffect.id);
+			const gmaxCenti = ['gmaxcentiferno'].includes(this.effectState.sourceEffect.id);
 			if (source && (!source.isActive || source.hp <= 0 || !source.activeTurns)) {
 				delete pokemon.volatiles['partiallytrapped'];
 				this.add('-end', pokemon, this.effectState.sourceEffect, '[partiallytrapped]', '[silent]');
 				return;
 			}
-			this.damage(pokemon.baseMaxhp / this.effectState.boundDivisor);
+			if (!['gmaxcentiferno'].includes(this.effectState.sourceEffect.id)) {
+				this.damage(pokemon.baseMaxhp / this.effectState.boundDivisor);
+			}
 		},
 		onEnd(pokemon) {
 			this.add('-end', pokemon, this.effectState.sourceEffect, '[partiallytrapped]');

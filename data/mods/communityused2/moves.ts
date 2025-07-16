@@ -1,3 +1,5 @@
+import { inherits } from "util";
+
 export const Moves: { [moveid: string]: ModdedMoveData } = {
 
 	giantssiege: {
@@ -14,6 +16,9 @@ export const Moves: { [moveid: string]: ModdedMoveData } = {
 				this.debug('giant\'s siege boost')
 				return this.chainModify(1.5);
 			}
+		},
+		onPrepareHit(target, source) {
+			this.add('-anim', source, 'Ice Shard', target);
 		},
 		secondary: null,
 		target: "normal",
@@ -35,10 +40,16 @@ export const Moves: { [moveid: string]: ModdedMoveData } = {
 				spe: -1,
 			},
 		},
+		onTryMove() {
+			this.attrLastMove('[still]');
+		},
+		onPrepareHit(target, source) {
+			this.add('-anim', source, 'Surf', target);
+		},
 		target: "allAdjacent",
 		type: "Water",
 		contestType: "Cool",
-		shortDesc: "10% chance to lower opponent's speed stat. Hits all adjacent targets.",
+		shortDesc: "10% chance to lower opponent's speed stat.",
 
 	},
 	archaicglare: {
@@ -50,25 +61,42 @@ export const Moves: { [moveid: string]: ModdedMoveData } = {
 		pp: 10,
 		priority: 0,
 		flags: { protect: 1, mirror: 1, metronome: 1 },
-		onBasePower(basePower, source) {
+		basePowerCallback(pokemon, target, move) {
+			let boost = 1;
 			if (this.field.getPseudoWeather('trickroom')) {
-				return this.chainModify(1.5);
+				this.debug('archaic glare TR boost');
+				boost = boost + 0.5;
+				//return move.basePower * 1.5;
 			}
-			if (['sunnyday', 'desolateland'].includes(source.effectiveWeather())) {
+			if (['sunnyday', 'desolateland'].includes(pokemon.effectiveWeather())) {
 				this.debug('archaic glare sun boost');
-				return this.chainModify(1.5);
+				boost = boost + 0.5;
+				//return move.basePower * 1.5;
 			}
+
+			return move.basePower * boost;
+		},
+		onHit(target, source, move) {
+			if (this.field.getPseudoWeather('trickroom')) return;
+			
+			this.field.addPseudoWeather('trickroom');
+		},
+		onTryMove() {
+			this.attrLastMove('[still]');
+		},
+		onPrepareHit(target, source) {
+			this.add('-anim', source, 'Psyshock', target);
 		},
 		target: "normal",
 		type: "Psychic",
 		contestType: "Cool",
-		shortDesc: "50% damage boost in Trick Room or harsh sunlight.",
+		shortDesc: "Deals +50% damage in TR/Sun. Sets TR.",
 
 	},
 	blindingblitz: {
 		num: -1003,
 		accuracy: 90,
-		basePower: 130,
+		basePower: 120,
 		category: "Physical",
 		name: "Blinding Blitz",
 		pp: 15,
@@ -82,7 +110,13 @@ export const Moves: { [moveid: string]: ModdedMoveData } = {
 		target: "normal",
 		type: "Bug",
 		contestType: "Cool",
-		shortDesc: "If this attack misses, user takes 50% of their max HP as recoil.",
+		shortDesc: "User takes 50% of their max HP as recoil on whiff.",
+		onTryMove() {
+			this.attrLastMove('[still]');
+		},
+		onPrepareHit(target, source) {
+			this.add('-anim', source, 'High Jump Kick', target);
+		},
 	},
 	boilingbash: {
 		num: -1004,
@@ -96,6 +130,12 @@ export const Moves: { [moveid: string]: ModdedMoveData } = {
 		secondary: {
 			chance: 30,
 			status: 'brn',
+		},
+		onTryMove() {
+			this.attrLastMove('[still]');
+		},
+		onPrepareHit(target, source) {
+			this.add('-anim', source, 'Flare Blitz', target);
 		},
 		target: "allAdjacent",
 		type: "Fire",
@@ -115,11 +155,14 @@ export const Moves: { [moveid: string]: ModdedMoveData } = {
 		condition: {
 			noCopy: true,
 			onStart(pokemon) {
+				if (pokemon.hasType(['Fire'])) {
+					return false;
+				}
 				this.add('-start', pokemon, 'Boiling Deluge');
 			},
 			onResidualOrder: 13,
 			onResidual(pokemon) {
-				this.damage(pokemon.baseMaxhp * (pokemon.hasType(['Water', 'Fire']) ? 0 : (1/8)));
+				this.damage(pokemon.baseMaxhp * (pokemon.hasType(['Fire']) ? 0 : (1 / 8)));
 			},
 			onEnd(pokemon) {
 				this.add('-end', pokemon, 'Boiling Deluge');
@@ -129,12 +172,18 @@ export const Moves: { [moveid: string]: ModdedMoveData } = {
 			chance: 100,
 			volatileStatus: 'boilingdeluge',
 		},
+		onTryMove() {
+			this.attrLastMove('[still]');
+		},
+		onPrepareHit(target, source) {
+			this.add('-anim', source, 'Flame Burst', target);
+		},
 		target: "normal",
 		type: "Fire",
-		shortDesc: "Pokemon hit by this move take 1/8 max HP every turn. Water and Fire types are immune to residual damage.",
+		shortDesc: "Pokemon hit take 1/8 max HP every turn. Fire types are immune.",
 
 	},
-	/*candlelight: {
+	candlelight: {
 		num: -1006,
 		accuracy: true,
 		basePower: 0,
@@ -146,56 +195,87 @@ export const Moves: { [moveid: string]: ModdedMoveData } = {
 		onHit(target, source, move) {
 			let success = false;
 			let removals = 0;
-			if (!target.volatiles['substitute'] || move.infiltrates) success = !!this.boost({ evasion: -1 });
+
 			const removeTarget = [
-				'reflect', 'lightscreen', 'auroraveil', 'safeguard', 'mist', 'spikes', 'toxicspikes', 'stealthrock', 'stickyweb', 'gmaxsteelsurge',
+				'spikes', 'toxicspikes', 'stealthrock', 'stickyweb', 'gmaxsteelsurge',
 			];
 			const removeAll = [
 				'spikes', 'toxicspikes', 'stealthrock', 'stickyweb', 'gmaxsteelsurge',
 			];
 			for (const targetCondition of removeTarget) {
+				if ((targetCondition === 'spikes' || targetCondition === 'toxicspikes') && target.side.getSideCondition(targetCondition)) {
+					removals += target.side.sideConditions[targetCondition].layers;
+				}
+				else if (target.side.getSideCondition(targetCondition)) {
+					removals++;
+				}
+
 				if (target.side.removeSideCondition(targetCondition)) {
 					if (!removeAll.includes(targetCondition)) continue;
-					this.add('-sideend', target.side, this.dex.conditions.get(targetCondition).name, '[from] move: Defog', '[of] ' + source);
+					this.add('-sideend', target.side, this.dex.conditions.get(targetCondition).name, '[from] move: Candlelight', '[of] ' + source);
 					success = true;
-					removals++;
 				}
 			}
 			for (const sideCondition of removeAll) {
-				if (source.side.removeSideCondition(sideCondition)) {
-					this.add('-sideend', source.side, this.dex.conditions.get(sideCondition).name, '[from] move: Defog', '[of] ' + source);
-					success = true;
+				if ((sideCondition === 'spikes' || sideCondition === 'toxicspikes') && source.side.getSideCondition(sideCondition)) {
+					removals += source.side.sideConditions[sideCondition].layers;
+				}
+				else if (source.side.getSideCondition(sideCondition)) {
 					removals++;
 				}
+
+				if (source.side.removeSideCondition(sideCondition)) {
+					this.add('-sideend', source.side, this.dex.conditions.get(sideCondition).name, '[from] move: Candlelight', '[of] ' + source);
+					success = true;
+				}
 			}
-			this.field.clearTerrain();
-			source.side.addSlotCondition(source, 'candlelight');
+
+			this.add('-message', `${source.name} cleared ${removals} hazards!`);
+
+			for (let i = 0; i < removals; i++) {
+				source.side.addSideCondition('candlelight');
+				
+			}
+
 			return success;
 		},
 		condition: {
-			onSwap(target) {
-				if (!target.fainted && (target.hp < target.maxhp || target.status)) {
-					target.heal(target.maxhp);
-					target.clearStatus();
-					this.add('-heal', target, target.getHealth, '[from] move: Healing Wish');
-					target.side.removeSlotCondition(target, 'healingwish');
-				}
+			onSideStart(side) {
+				this.add('-sidestart', side, 'Candlelight');
+				this.effectState.layers = 1;
+				//this.add('-message', `The candle started burning!`);
 			},
+			onSideRestart(side) {
+				this.effectState.layers++;
+				//this.add('-message', `The candle burns brighter!`);
+			},
+			onEntryHazard(pokemon) {
+				this.heal(this.effectState.layers * (pokemon.maxhp / 16));
+				pokemon.side.removeSideCondition('candlelight');
+				this.add('-message', `The candle went out!`);
+			},
+		},
+		onTryMove() {
+			this.attrLastMove('[still]');
+		},
+		onPrepareHit(target, source) {
+			this.add('-anim', source, 'Moonlight', target);
 		},
 		secondary: null,
 		target: "normal",
 		type: "Fairy",
 		contestType: "Cool",
-	},*/
+		shortDesc: "Removes all hazards. Next swap-in heals 1/16 per removed.",
+	},
 	dragonhunt: {
 		num: -1007,
 		accuracy: 100,
-		basePower: 80,
+		basePower: 50,
 		basePowerCallback(pokemon, target, move) {
 			// You can't get here unless the pursuit succeeds
 			if (target.beingCalledBack || target.switchFlag) {
 				this.debug('Dragon Hunt damage boost');
-				return move.basePower * 1.5;
+				return move.basePower * 2;
 			}
 			return move.basePower;
 		},
@@ -204,6 +284,12 @@ export const Moves: { [moveid: string]: ModdedMoveData } = {
 		pp: 20,
 		priority: 0,
 		flags: { contact: 1, protect: 1, mirror: 1, metronome: 1 },
+		onTryMove() {
+			this.attrLastMove('[still]');
+		},
+		onPrepareHit(target, source) {
+			this.add('-anim', source, 'Leech Life', target);
+		},
 		beforeTurnCallback(pokemon) {
 			for (const side of this.sides) {
 				if (side.hasAlly(pokemon)) continue;
@@ -252,22 +338,30 @@ export const Moves: { [moveid: string]: ModdedMoveData } = {
 		target: "normal",
 		type: "Dragon",
 		contestType: "Tough",
-		shortDesc: "Hits opponents as they switch out and gets a 50% power boost.",
+		shortDesc: "Hits opponents on swap out, gets a x2 power boost.",
 
 	},
 	gundown: {
 		num: -1008,
 		accuracy: 100,
-		basePower: 80,
+		basePower: 85,
 		category: "Special",
 		name: "Gun Down",
 		pp: 10,
 		priority: 0,
 		flags: { protect: 1, mirror: 1, distance: 1, metronome: 1, bullet: 1, pulse: 1 },
+		ignoreImmunity: { 'Fighting': true },
+		onTryMove() {
+			this.attrLastMove('[still]');
+		},
+		onPrepareHit(target, source) {
+			this.add('-anim', source, 'Snipe Shot', target);
+		},
 		secondary: null,
 		target: "any",
 		type: "Fighting",
 		contestType: "Tough",
+		shortDesc: "Ignores Ghost-type immunity.",
 	},
 	huntershot: {
 		num: -1009,
@@ -277,12 +371,21 @@ export const Moves: { [moveid: string]: ModdedMoveData } = {
 		name: "Hunter Shot",
 		pp: 15,
 		priority: 0,
-		flags: { contact: 1, protect: 1, mirror: 1, bullet: 1 },
+		flags: {protect: 1, mirror: 1, bullet: 1},
+		onTryMove() {
+			this.attrLastMove('[still]');
+		},
+		onPrepareHit(target, source) {
+			this.add('-anim', source, 'Flash Cannon', target);
+		},
+		self: {
+			volatileStatus: 'focusenergy',
+		},
 		willCrit: true,
 		secondary: null,
 		target: "normal",
 		type: "Steel",
-		shortDesc: "This move always crits.",
+		shortDesc: "This move always crits. Sets Focus Energy.",
 
 	},
 	lightthatburnthesky: {
@@ -290,13 +393,19 @@ export const Moves: { [moveid: string]: ModdedMoveData } = {
 		accuracy: 100,
 		basePower: 80,
 		category: "Special",
-		name: "Light That Burns The Sky",
+		name: "Light That Burn The Sky",
 		pp: 15,
 		priority: 0,
-		flags: { protect: 1, mirror: 1, metronome: 1, contact: 1 },
+		flags: {protect: 1, mirror: 1, metronome: 1},
 		secondary: {
 			chance: 30,
 			status: 'brn',
+		},
+		onTryMove() {
+			this.attrLastMove('[still]');
+		},
+		onPrepareHit(target, source) {
+			this.add('-anim', source, 'Moongeist Beam', target);
 		},
 		target: "allAdjacent",
 		type: "Psychic",
@@ -317,6 +426,12 @@ export const Moves: { [moveid: string]: ModdedMoveData } = {
 			chance: 20,
 			status: 'par',
 		},
+		onTryMove() {
+			this.attrLastMove('[still]');
+		},
+		onPrepareHit(target, source) {
+			this.add('-anim', source, 'Crabhammer', target);
+		},
 		target: "normal",
 		type: "Rock",
 		contestType: "Tough",
@@ -332,7 +447,7 @@ export const Moves: { [moveid: string]: ModdedMoveData } = {
 		pp: 1,
 		noPPBoosts: true,
 		priority: 0,
-		flags: { protect: 1, mirror: 1, recharge: 1},
+		flags: { protect: 1, mirror: 1, recharge: 1 },
 		secondary: {
 			chance: 100,
 			status: 'frz',
@@ -340,7 +455,13 @@ export const Moves: { [moveid: string]: ModdedMoveData } = {
 		self: {
 			volatileStatus: 'mustrecharge',
 		},
-		mindBlownRecoil: true,
+		onTryMove() {
+			this.attrLastMove('[still]');
+		},
+		onPrepareHit(target, source) {
+			this.add('-anim', source, 'Sheer Cold', target);
+		},
+		/*mindBlownRecoil: true,
 		onAfterMove(pokemon, target, move) {
 			if (move.mindBlownRecoil && !move.multihit) {
 				const hpBeforeRecoil = pokemon.hp;
@@ -349,11 +470,11 @@ export const Moves: { [moveid: string]: ModdedMoveData } = {
 					this.runEvent('EmergencyExit', pokemon, pokemon);
 				}
 			}
-		},
+		},*/
 		target: "normal",
 		type: "Ice",
 		contestType: "Cool",
-		shortDesc: "100% chance to freeze. User takes 50% of their max HP as recoil and must recharge.",
+		shortDesc: "100% chance to freeze. User must recharge.",
 
 	},
 	prominenceshock: {
@@ -368,6 +489,12 @@ export const Moves: { [moveid: string]: ModdedMoveData } = {
 		self: {
 			volatileStatus: 'mustrecharge',
 		},
+		onTryMove() {
+			this.attrLastMove('[still]');
+		},
+		onPrepareHit(target, source) {
+			this.add('-anim', source, 'Volt Tackle', target);
+		},
 		recoil: [50, 100],
 		target: "normal",
 		type: "Electric",
@@ -377,15 +504,21 @@ export const Moves: { [moveid: string]: ModdedMoveData } = {
 	sicklysugar: {
 		num: -1014,
 		accuracy: 100,
-		basePower: 75,
+		basePower: 90,
 		category: "Special",
 		name: "Sickly Sugar",
 		pp: 15,
 		priority: 0,
 		flags: { protect: 1, mirror: 1 },
+		onTryMove() {
+			this.attrLastMove('[still]');
+		},
+		onPrepareHit(target, source) {
+			this.add('-anim', source, 'Sludge Bomb', target);
+		},
 		onHit(target, source, move) {
 			if (target.status === 'psn' || target.status === 'tox') {
-				return !!this.boost({ atk: -1, spa: -1, spe: -1 }, target, source, move);
+				return !!this.boost({ atk: -1, spa: -1 }, target, source, move);
 			}
 			return false;
 		},
@@ -402,6 +535,10 @@ export const Moves: { [moveid: string]: ModdedMoveData } = {
 		pp: 10,
 		priority: 0,
 		flags: { protect: 1, mirror: 1, metronome: 1 },
+		ignoreImmunity: { 'Poison': true },
+		onPrepareHit(target, source) {
+			this.add('-anim', source, 'Toxic', target);
+		},
 		onEffectiveness(typeMod, target, type) {
 			if (type === 'Steel') return 1;
 		},
@@ -411,6 +548,7 @@ export const Moves: { [moveid: string]: ModdedMoveData } = {
 			}
 		},
 		onTryMove(source, target, move) {
+			this.attrLastMove('[still]');
 			if (target.hasType('Poison') && source.volatiles['healblock']) {
 				this.attrLastMove('[still]');
 				this.add('cant', source, 'move: Heal Block', move);
@@ -434,17 +572,23 @@ export const Moves: { [moveid: string]: ModdedMoveData } = {
 		target: "normal",
 		type: "Poison",
 		contestType: "Beautiful",
-		shortDesc: "Super-effective against Steel-types. If it hits a Poison, they instead heal 25% HP.",
+		shortDesc: "SE vs. Steels. Heals Poison-types by 25%.",
 
 	},
 	vitalspark: {
 		num: -1016,
 		accuracy: 100,
-		basePower: 95,
+		basePower: 70,
 		category: "Special",
 		name: "Vital Spark",
 		pp: 10,
 		priority: 0,
+		onTryMove() {
+			this.attrLastMove('[still]');
+		},
+		onPrepareHit(target, source) {
+			this.add('-anim', source, 'Shadow Ball', target);
+		},
 		flags: { protect: 1, mirror: 1, metronome: 1 },
 		self: {
 			volatileStatus: 'charge',
@@ -455,5 +599,256 @@ export const Moves: { [moveid: string]: ModdedMoveData } = {
 		contestType: "Cool",
 		shortDesc: "User gains Charge volatile.",
 
+	},
+	realmsravage: {
+		num: -1017,
+		accuracy: 100,
+		basePower: 0,
+		basePowerCallback(pokemon, target) {
+			const ratio = Math.max(Math.floor(pokemon.hp * 48 / pokemon.maxhp), 1);
+			let bp;
+			if (ratio < 12) {
+				bp = 150;
+			} else if (ratio < 24) {
+				bp = 100;
+			} else if (ratio < 36) {
+				bp = 60;
+			} else {
+				bp = 40;
+			}
+			this.debug('BP: ' + bp);
+			return bp;
+		},
+		category: "Physical",
+		name: "Realm's Ravage",
+		critRatio: 2,
+		pp: 5,
+		priority: 0,
+		flags: { protect: 1, mirror: 1, metronome: 1 },
+		onTryMove() {
+			this.attrLastMove('[still]');
+		},
+		onPrepareHit(target, source) {
+			this.add('-anim', source, 'Outrage', target);
+		},
+		secondary: null,
+		target: "normal",
+		type: "Fire",
+		shortDesc: "Does more damage the lower the user's HP gets.",
+	},
+	crystallineshelter: {
+		num: -1018,
+		accuracy: true,
+		basePower: 0,
+		category: "Status",
+		name: "Crystalline Shelter",
+		pp: 20,
+		priority: 0,
+		flags: { snatch: 1 },
+		volatileStatus: 'crystallineshelter',
+		condition: {
+			onStart(target, source, effect) {
+				this.add('-start', target, 'move: Crystalline Shelter');
+			},
+			onDamagingHit(damage, target, source, move) {
+				if (this.checkMoveMakesContact(move, source, target)) {
+					this.damage(source.baseMaxhp / 6, source, target);
+				}
+			},
+		},
+		type: "Rock",
+		target: "self",
+		secondary: null,
+		shortDesc: "Gives the user Rocky Helmet effects.",
+	},
+	dustveil: {
+		num: -1019,
+		accuracy: true,
+		basePower: 0,
+		category: "Status",
+		name: "Dust Veil",
+		pp: 10,
+		priority: 0,
+		flags: { snatch: 1 },
+		sideCondition: 'dustveil',
+		onTry() {
+			return this.field.isWeather(['sandstorm']);
+		},
+		condition: {
+			duration: 5,
+			durationCallback(target, source, effect) {
+				if (source?.hasItem('lightclay')) {
+					return 8;
+				}
+				return 5;
+			},
+			onSideStart(side, source) {
+				this.add('-sidestart', side, 'move: Dust Veil');
+			},
+			onModifyAtk(atk, pokemon) {
+				return this.chainModify(1.3);
+			},
+			onModifySpA(spa, pokemon) {
+				return this.chainModify(1.3);
+			},
+			onSideResidualOrder: 26,
+			onSideResidualSubOrder: 5,
+			onSideEnd(side) {
+				this.add('-sideend', side, 'move: Dust Veil');
+			},
+		},
+		secondary: null,
+		target: "allySide",
+		type: "Ground",
+		shortDesc: "Sand: Damage dealt x1.3, 5 turns (8 Light Clay)",
+	},
+	devour: {
+		num: -1020,
+		accuracy: 100,
+		basePower: 90,
+		category: "Physical",
+		name: "Devour",
+		onTryMove() {
+			this.attrLastMove('[still]');
+		},
+		onPrepareHit(target, source) {
+			this.add('-anim', source, 'Crunch', target);
+		},
+		pp: 10,
+		flags: { contact: 1, protect: 1, bite: 1, cantusetwice: 1},
+		priority: 0,
+		target: "normal",
+		type: "Dragon",
+		shortDesc: "Maintains Ouroboros streak. Can't be used twice in a row.",
+	},
+	defog: {
+		inherit: true,
+		flags: { protect: 1, reflectable: 1, mirror: 1, bypasssub: 1, metronome: 1, wind: 1 },
+		onHit(target, source, move) {
+			let success = false;
+			if (!target.volatiles['substitute'] || move.infiltrates) success = !!this.boost({evasion: -1});
+			const removeTarget = [
+				// cu2: adding dust veil
+				'reflect', 'lightscreen', 'auroraveil', 'dustveil', 'safeguard', 'mist', 'spikes', 'toxicspikes', 'stealthrock', 'stickyweb', 'gmaxsteelsurge',
+			];
+			const removeAll = [
+				'spikes', 'toxicspikes', 'stealthrock', 'stickyweb', 'gmaxsteelsurge',
+			];
+			for (const targetCondition of removeTarget) {
+				if (target.side.removeSideCondition(targetCondition)) {
+					if (!removeAll.includes(targetCondition)) continue;
+					this.add('-sideend', target.side, this.dex.conditions.get(targetCondition).name, '[from] move: Defog', '[of] ' + source);
+					success = true;
+				}
+			}
+			for (const sideCondition of removeAll) {
+				if (source.side.removeSideCondition(sideCondition)) {
+					this.add('-sideend', source.side, this.dex.conditions.get(sideCondition).name, '[from] move: Defog', '[of] ' + source);
+					success = true;
+				}
+			}
+			this.field.clearTerrain();
+			return success;
+		},
+	},
+	brickbreak: {
+		inherit: true,
+		onTryHit(pokemon) {
+			// will shatter screens through sub, before you hit
+
+			// CU 2 note: adding Dust Veil
+			pokemon.side.removeSideCondition('reflect');
+			pokemon.side.removeSideCondition('lightscreen');
+			pokemon.side.removeSideCondition('auroraveil');
+			pokemon.side.removeSideCondition('dustveil');
+		},
+	},
+	psychicfangs: {
+		inherit: true,
+		onTryHit(pokemon) {
+			// will shatter screens through sub, before you hit
+
+			// CU 2 note: adding Dust Veil
+			pokemon.side.removeSideCondition('reflect');
+			pokemon.side.removeSideCondition('lightscreen');
+			pokemon.side.removeSideCondition('auroraveil');
+			pokemon.side.removeSideCondition('dustveil');
+		},
+	},
+	ragingbull: {
+		inherit: true,
+		onTryHit(pokemon) {
+			// will shatter screens through sub, before you hit
+
+			// cu2 note: not in, future proofing to add dust veil in case anything gets this move
+			pokemon.side.removeSideCondition('reflect');
+			pokemon.side.removeSideCondition('lightscreen');
+			pokemon.side.removeSideCondition('auroraveil');
+			pokemon.side.removeSideCondition('dustveil');
+		},
+	},
+	courtchange: {
+		inherit: true,
+		onHitField(target, source) {
+			// cu2 note: not in, future proofing to add dust veil in case anything gets this move
+
+			const sideConditions = [
+				'mist', 'lightscreen', 'reflect', 'dustveil', 'spikes', 'safeguard', 'tailwind', 'toxicspikes', 'stealthrock', 'waterpledge', 'firepledge', 'grasspledge', 'stickyweb', 'auroraveil', 'gmaxsteelsurge', 'gmaxcannonade', 'gmaxvinelash', 'gmaxwildfire',
+			];
+			let success = false;
+			if (this.gameType === "freeforall") {
+				// random integer from 1-3 inclusive
+				const offset = this.random(3) + 1;
+				// the list of all sides in counterclockwise order
+				const sides = [this.sides[0], this.sides[2]!, this.sides[1], this.sides[3]!];
+				const temp: {[k: number]: typeof source.side.sideConditions} = {0: {}, 1: {}, 2: {}, 3: {}};
+				for (const side of sides) {
+					for (const id in side.sideConditions) {
+						if (!sideConditions.includes(id)) continue;
+						temp[side.n][id] = side.sideConditions[id];
+						delete side.sideConditions[id];
+						const effectName = this.dex.conditions.get(id).name;
+						this.add('-sideend', side, effectName, '[silent]');
+						success = true;
+					}
+				}
+				for (let i = 0; i < 4; i++) {
+					const sourceSideConditions = temp[sides[i].n];
+					const targetSide = sides[(i + offset) % 4]; // the next side in rotation
+					for (const id in sourceSideConditions) {
+						targetSide.sideConditions[id] = sourceSideConditions[id];
+						const effectName = this.dex.conditions.get(id).name;
+						let layers = sourceSideConditions[id].layers || 1;
+						for (; layers > 0; layers--) this.add('-sidestart', targetSide, effectName, '[silent]');
+					}
+				}
+			} else {
+				const sourceSideConditions = source.side.sideConditions;
+				const targetSideConditions = source.side.foe.sideConditions;
+				const sourceTemp: typeof sourceSideConditions = {};
+				const targetTemp: typeof targetSideConditions = {};
+				for (const id in sourceSideConditions) {
+					if (!sideConditions.includes(id)) continue;
+					sourceTemp[id] = sourceSideConditions[id];
+					delete sourceSideConditions[id];
+					success = true;
+				}
+				for (const id in targetSideConditions) {
+					if (!sideConditions.includes(id)) continue;
+					targetTemp[id] = targetSideConditions[id];
+					delete targetSideConditions[id];
+					success = true;
+				}
+				for (const id in sourceTemp) {
+					targetSideConditions[id] = sourceTemp[id];
+				}
+				for (const id in targetTemp) {
+					sourceSideConditions[id] = targetTemp[id];
+				}
+				this.add('-swapsideconditions');
+			}
+			if (!success) return false;
+			this.add('-activate', source, 'move: Court Change');
+		},
 	},
 }

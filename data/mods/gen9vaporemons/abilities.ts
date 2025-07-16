@@ -3,7 +3,7 @@ export const Abilities: {[k: string]: ModdedAbilityData} = {
 		onSourceAfterFaint(length, target, source, effect) {
 			if (effect?.effectType !== 'Move' || source.species.id !== 'palafin' || !source.hp || source.transformed || !source.side.foe.pokemonLeft) {
 				return;
-			}
+			} 
 			this.add('-activate', source, 'ability: Zero to Hero');
 			source.formeChange('Palafin-Hero', this.effect, true);
 		},
@@ -54,6 +54,7 @@ export const Abilities: {[k: string]: ModdedAbilityData} = {
 				 }
 			},
 	   },
+		flags: {},
 		rating: 3,
 		shortDesc: "On faint, the next Pokemon sent out heals 50% of its max HP.",
 		num: 131,
@@ -67,6 +68,7 @@ export const Abilities: {[k: string]: ModdedAbilityData} = {
 			}
 			if (move?.type === 'Flying' && pokemon.hp >= pokemon.maxhp / 2) return priority + 1;
 		},
+		flags: {},
 		name: "Gale Wings",
 		shortDesc: "If this Pokemon has 50% of its max HP or more, its Flying-type moves have their priority increased by 1.",
 		rating: 3,
@@ -132,6 +134,7 @@ export const Abilities: {[k: string]: ModdedAbilityData} = {
 				return this.chainModify([dmgMod[numConsecutive], 4096]);
 			},
 		},
+		flags: {},
 		name: "Muscle Memory",
 		shortDesc: "Damage of moves used on consecutive turns is increased. Max 2x after 5 turns.",
 		rating: 4,
@@ -168,6 +171,7 @@ export const Abilities: {[k: string]: ModdedAbilityData} = {
 				target.removeVolatile('healblock');
 			}
 		},
+		flags: {},
 		rating: 4,
 	},
 	seedsower: {
@@ -177,6 +181,7 @@ export const Abilities: {[k: string]: ModdedAbilityData} = {
 				source.addVolatile('leechseed', this.effectState.target);
 			}
 		},
+		flags: {},
 		name: "Seed Sower",
 		shortDesc: "When this Pokemon is hit by an attack, the effect of Leech Seed begins.",
 		rating: 3,
@@ -218,6 +223,7 @@ export const Abilities: {[k: string]: ModdedAbilityData} = {
 				if (this.effectState.source?.isActive || gmaxEffect) pokemon.tryTrap();
 			},
 		},
+		flags: {},
 		name: "Sand Spit",
 		shortDesc: "When this Pokemon is hit by an attack, the effect of Sand Tomb begins.",
 		rating: 4,
@@ -234,6 +240,7 @@ export const Abilities: {[k: string]: ModdedAbilityData} = {
 		onImmunity(type, pokemon) {
 			if (type === 'sandstorm') return false;
 		},
+		flags: {},
 		name: "Sand Force",
 		rating: 2,
 		shortDesc: "This Pokemon's moves deal 1.3x damage in a sandstorm; Sand immunity.",
@@ -244,9 +251,13 @@ export const Abilities: {[k: string]: ModdedAbilityData} = {
 			this.effectState.switchingIn = true;
 		},
 		onStart(pokemon) {
-			if (!this.effectState.switchingIn) return;
-			this.add('-ability', pokemon, 'Cloud Nine');
-			this.effectState.switchingIn = false;
+			// Cloud Nine does not activate when Skill Swapped or when Neutralizing Gas leaves the field
+			pokemon.abilityState.ending = false; // Clear the ending flag
+			if (this.effectState.switchingIn) {
+				this.add('-ability', pokemon, 'Cloud Nine');
+				this.effectState.switchingIn = false;
+			}
+			this.eachEvent('WeatherChange', this.effect);
 			this.add('-message', `${pokemon.name} suppresses the effects of the terrain!`);
 			if (this.field.terrain) {
 				for (const other of pokemon.foes()) {
@@ -291,6 +302,7 @@ export const Abilities: {[k: string]: ModdedAbilityData} = {
 				}
 			}
 			source.abilityState.ending = true;
+			this.eachEvent('WeatherChange', this.effect);
 			for (const pokemon of this.getAllActive()) {
 				if (pokemon.hasAbility('mimicry')) {
 					if (this.field.terrain) {
@@ -321,6 +333,7 @@ export const Abilities: {[k: string]: ModdedAbilityData} = {
 		},
 		condition: {},
 		suppressWeather: true,
+		flags: {},
 		name: "Cloud Nine",
 		shortDesc: "While this Pokemon is active, the effects of weathers and terrains are disabled.",
 		rating: 2,
@@ -387,7 +400,7 @@ export const Abilities: {[k: string]: ModdedAbilityData} = {
 				this.add('-end', pokemon, 'Rune Drive');
 			},
 		},
-		flags: {failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1, failskillswap: 1, cantsuppress: 1},
+		flags: {failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1, failskillswap: 1, notransform: 1},
 		name: "Rune Drive",
 		rating: 3,
 		shortDesc: "Misty Terrain active or Booster Energy used: highest stat is 1.3x, or 1.5x if Speed.",
@@ -453,7 +466,7 @@ export const Abilities: {[k: string]: ModdedAbilityData} = {
 				this.add('-end', pokemon, 'Photon Drive');
 			},
 		},
-		flags: {failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1, failskillswap: 1, cantsuppress: 1},
+		flags: {failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1, failskillswap: 1, notransform: 1},
 		name: "Photon Drive",
 		rating: 3,
 		shortDesc: "Grassy Terrain active or Booster Energy used: highest stat is 1.3x, or 1.5x if Speed.",
@@ -519,7 +532,7 @@ export const Abilities: {[k: string]: ModdedAbilityData} = {
 				this.add('-end', pokemon, 'Neuron Drive');
 			},
 		},
-		flags: {failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1, failskillswap: 1, cantsuppress: 1},
+		flags: {failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1, failskillswap: 1, notransform: 1},
 		name: "Neuron Drive",
 		rating: 3,
 		shortDesc: "Psychic Terrain active or Booster Energy used: highest stat is 1.3x, or 1.5x if Speed.",
@@ -586,7 +599,7 @@ export const Abilities: {[k: string]: ModdedAbilityData} = {
 				this.add('-end', pokemon, 'Protosmosis');
 			},
 		},
-		flags: {failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1, failskillswap: 1, cantsuppress: 1},
+		flags: {failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1, failskillswap: 1, notransform: 1},
 		name: "Protosmosis",
 		rating: 3,
 		shortDesc: "Rain active or Booster Energy used: highest stat is 1.3x, or 1.5x if Speed.",
@@ -653,7 +666,7 @@ export const Abilities: {[k: string]: ModdedAbilityData} = {
 				this.add('-end', pokemon, 'Protocrysalis');
 			},
 		},
-		flags: {failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1, failskillswap: 1, cantsuppress: 1},
+		flags: {failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1, failskillswap: 1, notransform: 1},
 		name: "Protocrysalis",
 		rating: 3,
 		shortDesc: "Sandstorm active or Booster Energy used: highest stat is 1.3x, or 1.5x if Speed.",
@@ -720,7 +733,7 @@ export const Abilities: {[k: string]: ModdedAbilityData} = {
 				this.add('-end', pokemon, 'Protostasis');
 			},
 		},
-		flags: {failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1, failskillswap: 1, cantsuppress: 1},
+		flags: {failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1, failskillswap: 1, notransform: 1},
 		name: "Protostasis",
 		rating: 3,
 		shortDesc: "Snow active or Booster Energy used: highest stat is 1.3x, or 1.5x if Speed.",
@@ -741,7 +754,14 @@ export const Abilities: {[k: string]: ModdedAbilityData} = {
 			onAfterMove(pokemon) {
 				pokemon.removeVolatile('counteract');
 			},
+			onFlinch(pokemon) {
+				pokemon.removeVolatile('counteract');
+			},
+			/* onMoveFail(target, source, move) { // test later
+				source.removeVolatile('counteract');
+			}, */
 		},
+		flags: {},
 		desc: "While this Pokemon is active, opposing Pokemon's moves and their effects ignore its own Ability. Does not affect the As One, Battle Bond, Comatose, Disguise, Gulp Missile, Ice Face, Multitype, Power Construct, RKS System, Schooling, Shields Down, Stance Change, or Zen Mode Abilities.",
 		shortDesc: "While this Pokemon is active, opposing Pokemon's Ability has no effect when it uses moves.",
 		rating: 4,
@@ -761,6 +781,7 @@ export const Abilities: {[k: string]: ModdedAbilityData} = {
 				return secondaries.filter(effect => !!(effect.self || effect.dustproof));
 			}
 		},
+		flags: {breakable: 1},
 		shortDesc: "In Sun: Immune to indirect damage and secondary effects.",
 		gen: 8,
 	},
@@ -781,6 +802,7 @@ export const Abilities: {[k: string]: ModdedAbilityData} = {
 		onImmunity(type, pokemon) {
 			if (type === 'sandstorm') return false;
 		},
+		flags: {breakable: 1},
 		shortDesc: "In Sandstorm: Immune to indirect damage and secondary effects.",
 		rating: 3,
 		num: 8,
@@ -802,6 +824,7 @@ export const Abilities: {[k: string]: ModdedAbilityData} = {
 		onImmunity(type, pokemon) {
 			if (type === 'hail') return false;
 		},
+		flags: {breakable: 1},
 		shortDesc: "In Snow: Immune to indirect damage and secondary effects.",
 		rating: 3,
 		num: 81,
@@ -819,6 +842,7 @@ export const Abilities: {[k: string]: ModdedAbilityData} = {
 				}
 		},
 		condition: {},
+		flags: {},
 		name: "Outclass",
 		shortDesc: "If this Pokemon has one type, it steals the primary typing off a Pokemon it hits with an attack.",
 		rating: 4,
@@ -877,6 +901,7 @@ export const Abilities: {[k: string]: ModdedAbilityData} = {
 		},
 		flags: {breakable: 1},
 		name: "Sheer Heart",
+		rating: 4,
 		shortDesc: "Special attacks have 1.3x power; stat changes to the Special Attack stat have no effect.",
 	},
 	battlespines: {
@@ -885,7 +910,9 @@ export const Abilities: {[k: string]: ModdedAbilityData} = {
 				this.damage(source.baseMaxhp / 8, source, target);
 			}
 		},
+		flags: {},
 		name: "Battle Spines",
+		rating: 4.5,
 		shortDesc: "This Pokemon’s attacks do an additional 1/8 of the target’s max HP in damage.",
 	},
 	smelt: {
@@ -909,6 +936,7 @@ export const Abilities: {[k: string]: ModdedAbilityData} = {
 				pokemon.removeVolatile('smelt');
 			},
 		},
+		flags: {breakable: 1},
 		shortDesc: "Rock moves used against this Pokemon become Fire-type (includes Stealth Rock).",
 		rating: 4,
 	},
@@ -932,9 +960,10 @@ export const Abilities: {[k: string]: ModdedAbilityData} = {
 				}
 			}
 		},
+		flags: {},
 		name: "Color Change",
 		shortDesc: "This Pokemon's type changes to the type of a move it's about to be hit by, unless it has the type.",
-		rating: 0,
+		rating: 2.5,
 		num: 16,
 	},
 	greeneyed: {
@@ -943,14 +972,20 @@ export const Abilities: {[k: string]: ModdedAbilityData} = {
 			this.add('-ability', source, 'Green-Eyed');
 			source.addVolatile('snatch');
 		},
+		flags: {},
 		shortDesc: "On switch-in, if the foe uses a Snatchable move, this Pokemon uses it instead.",
 		rating: 3,
 	},
 	mudwash: {
 		name: "Mud Wash",
 		onStart(source) {
+			/*
 			this.actions.useMove("Mud Sport", source);
 			this.actions.useMove("Water Sport", source);
+			*/
+			this.add('-ability', source, 'Mud Wash');
+			this.field.addPseudoWeather('mudsport', source, source.ability);
+			this.field.addPseudoWeather('watersport', source, source.ability);
 			this.add('-message', `${source.name}'s splashed around in the mud!`);
 		},
 		onModifyMove(move, pokemon) {
@@ -964,6 +999,7 @@ export const Abilities: {[k: string]: ModdedAbilityData} = {
 				return this.chainModify(2);
 			}
 		},
+		flags: {},
 		shortDesc: "On switch-in, sets Mud Sport and Water Sport. This Pokemon's mud moves deal double damage but lose their secondary effects.",
 		rating: 5,
 	},
@@ -1087,14 +1123,16 @@ export const Abilities: {[k: string]: ModdedAbilityData} = {
 				pokemon.removeVolatile('bluntforce');
 			},
 		},
-	
+		flags: {},	
 		name: "Blunt Force",
 		rating: 3.5,
 		shortDesc: "This Pokemon's physical moves have 1.5x power but can't be super effective.",
 	},
 	waterveil: {
 		onStart(source) {
-			this.actions.useMove("Aqua Ring", source);
+			//this.actions.useMove("Aqua Ring", source);
+			this.add('-ability', source, 'Water Veil');
+			source.addVolatile('aquaring');
 		},
 		onUpdate(pokemon) {
 			if (pokemon.status === 'brn') {
@@ -1155,6 +1193,7 @@ export const Abilities: {[k: string]: ModdedAbilityData} = {
 				return this.chainModify([0x1333, 0x1000]);
 			}
 		},
+		flags: {},
 		name: "Blaze",
 		rating: 2,
 		num: 66,
@@ -1183,6 +1222,7 @@ export const Abilities: {[k: string]: ModdedAbilityData} = {
 				return this.chainModify([0x1333, 0x1000]);
 			}
 		},
+		flags: {},
 		name: "Torrent",
 		rating: 2,
 		num: 67,
@@ -1211,6 +1251,7 @@ export const Abilities: {[k: string]: ModdedAbilityData} = {
 				return this.chainModify([0x1333, 0x1000]);
 			}
 		},
+		flags: {},
 		name: "Overgrow",
 		rating: 2,
 		num: 65,
@@ -1239,6 +1280,7 @@ export const Abilities: {[k: string]: ModdedAbilityData} = {
 				return this.chainModify([0x1333, 0x1000]);
 			}
 		},
+		flags: {},
 		name: "Swarm",
 		rating: 2,
 		num: 68,
@@ -1317,6 +1359,7 @@ export const Abilities: {[k: string]: ModdedAbilityData} = {
 				this.heal(target.baseMaxhp / 8);
 			}
 		},
+		flags: {},
 		name: "Momentum",
 		shortDesc: "The user heals 1/8 of its HP if it uses or gets hit by a spinning move.",
 	},
@@ -1335,6 +1378,7 @@ export const Abilities: {[k: string]: ModdedAbilityData} = {
 				this.add('-message', `${pokemon.name}'s regenerated its berry!`);
 			}
 		},
+		flags: {},
 		name: "Cud Chew",
 		rating: 4,
 		num: 291,
@@ -1356,7 +1400,7 @@ export const Abilities: {[k: string]: ModdedAbilityData} = {
 			attacker.addVolatile('permafrost');
 		},
 		condition: {
-			onModifyTypePriority: -1,
+			onModifyTypePriority: -2,
 			onModifyType(move, pokemon) {
 				if (move.type === 'Water') {
 					move.type = 'Ice';
@@ -1366,6 +1410,7 @@ export const Abilities: {[k: string]: ModdedAbilityData} = {
 				pokemon.removeVolatile('permafrost');
 			},
 		},
+		flags: {},
 		shortDesc: "Water moves used against this Pokemon become Ice-type. +1 Def/SpD when hit by Ice.",
 		rating: 4,
 	},
@@ -1385,6 +1430,7 @@ export const Abilities: {[k: string]: ModdedAbilityData} = {
 				}
 			}
 		},
+		flags: {},
 		name: "Prehistoric Might",
 		rating: 2.5,
 		shortDesc: "On switch-in, the foe's Speed is lowered by 2 stages if it has a positive stat boost.",
@@ -1397,6 +1443,7 @@ export const Abilities: {[k: string]: ModdedAbilityData} = {
 				}
 			}
 		},
+		flags: {},
 		name: "Synchronize",
 		rating: 2,
 		num: 28,
@@ -1442,6 +1489,7 @@ export const Abilities: {[k: string]: ModdedAbilityData} = {
 		onFaint(pokemon) {
 			pokemon.illusion = null;
 		},
+		flags: {breakable: 1},
 		name: "Illusion",
 		rating: 4.5,
 		num: 149,
@@ -1457,6 +1505,7 @@ export const Abilities: {[k: string]: ModdedAbilityData} = {
 				return this.chainModify(0.5);
 			}
 		},
+		flags: {breakable: 1},
 		name: "Steadfast",
 		rating: 4,
 		num: 80,
@@ -1510,6 +1559,7 @@ export const Abilities: {[k: string]: ModdedAbilityData} = {
 				}
 			},
 		},
+		flags: {},
 		shortDesc: "While this Pokemon is active, no stat changes can occur.",
 	},
 	
@@ -1710,7 +1760,7 @@ export const Abilities: {[k: string]: ModdedAbilityData} = {
 				this.add('-end', pokemon, 'Quark Drive');
 			},
 		},
-		flags: {failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1, failskillswap: 1, cantsuppress: 1},
+		flags: {failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1, failskillswap: 1, notransform: 1},
 		name: "Quark Drive",
 		rating: 3,
 		num: 282,
