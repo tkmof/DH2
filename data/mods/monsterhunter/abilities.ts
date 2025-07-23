@@ -28,13 +28,23 @@ export const Abilities: import('../sim/dex-abilities').AbilityDataTable = {
 					target.formeChange('zamtriosiced', this.effect, true);
 				}
 			},
-			onStart(pokemon) {
+		onStart(pokemon) {
 				if (this.field.isWeather(['hail', 'snow']) && pokemon.species.id === 'zamtrios') {
 					this.add('-ability', pokemon, 'Ice-Armor');
 					this.add('-message', `Zamtrios is transforming!`);
 					pokemon.formeChange('zamtriosiced', this.effect, true);
 				}
 			},
+			onWeatherChange(pokemon, source, sourceEffect) {
+			// snow/hail resuming because Cloud Nine/Air Lock ended does not trigger Ice Face
+			if ((sourceEffect as Ability)?.suppressWeather) return;
+			if (!pokemon.hp) return;
+			if (this.field.isWeather(['hail', 'snow']) && pokemon.species.id === 'zamtrios') {
+					this.add('-ability', pokemon, 'Ice-Armor');
+					this.add('-message', `Zamtrios is transforming!`);
+					pokemon.formeChange('zamtriosiced', this.effect, true);
+				}
+		},
 		flags: { failroleplay: 1, noreceiver: 1, noentrain: 1, notrace: 1, failskillswap: 1, cantsuppress: 1, 
 			notransform: 1},
 		name: "Ice-Armor",
@@ -1071,14 +1081,22 @@ export const Abilities: import('../sim/dex-abilities').AbilityDataTable = {
 		name: "Overload",
 		rating: 3.5,
 		flags: {},
-		shortDesc: "All Dragon moves used by the user are 1.4x Base Power but have 20% recoil.",
+		shortDesc: "All Dragon moves used by the user are 1.4x damage but have 20% recoil.",
 		onModifyMove(move) {
-			if(move.type === 'Dragon' && move.category === 'Physical' && move.category === 'Special') {
-				if (!move.recoil) move.recoil = [1, 5];
+			if(move.type === 'Dragon' && move.category !=='Status') {
+				move.recoil = [1, 5];
 			}
 		},
-		onBasePower(move) {
-			if(move.type === 'Dragon' && move.category === 'Physical' && move.category === 'Special') {
+		onModifyAtk(atk, attacker, defender, move) {
+			if (move.type === 'Dragon') {
+				this.debug('Overload boost');
+				return this.chainModify(1.4);
+			}
+		},
+		onModifySpAPriority: 5,
+		onModifySpA(atk, attacker, defender, move) {
+			if (move.type === 'Dragon') {
+				this.debug('Overload boost');
 				return this.chainModify(1.4);
 			}
 		},
